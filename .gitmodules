@@ -1,6 +1,3 @@
-[submodule "lib/armadillo-code"]
-	path = lib/armadillo-code
-	url = https://github.com/conradsnicta/armadillo-code
-[submodule "lib/dlib"]
-	path = lib/dlib
+[submodule "modules/dlib"]
+	path = modules/dlib
 	url = https://github.com/davisking/dlib
