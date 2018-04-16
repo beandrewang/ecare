@@ -1,3 +1,9 @@
 [submodule "modules/dlib"]
 	path = modules/dlib
 	url = https://github.com/davisking/dlib
+[submodule "modules/armadillo-code"]
+	path = modules/armadillo-code
+	url = https://github.com/conradsnicta/armadillo-code/
+[submodule "modules/mlpack"]
+	path = modules/mlpack
+	url = https://github.com/mlpack/mlpack
