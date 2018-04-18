@@ -18,7 +18,7 @@ if nargin == 0
   Cy = 150;
   Rotation = pi/2 + 0.1; % Radians
   
-  NoiseLevel = 0.0; % Will add Gaussian noise of this std.dev. to points
+  NoiseLevel = 1.0; % Will add Gaussian noise of this std.dev. to points
   
   x = Rx * cos(t);
   y = Ry * sin(t);
@@ -48,6 +48,7 @@ if nargin == 0
   
   return
 end
+
 X = points(1, :);
 Y = points(2, :);
 % normalize data
@@ -67,21 +68,21 @@ y = y(:);
 D = [ x.*x  x.*y  y.*y  x  y  ones(size(x)) ];
 
 % Build scatter matrix
-S = D'*D;
+S = D'*D
 
 % Build 6x6 constraint matrix
-C(6,6) = 0; C(1,3) = -2; C(2,2) = 1; C(3,1) = -2;
+C(6,6) = 0; C(1,3) = 2; C(2,2) = -1; C(3,1) = 2;
 
 % Solve eigensystem
 if 1
   % Old way, numerically unstable if not implemented in matlab
-  [gevec, geval] = eig(S,C);
+  [gevec, geval] = eig(pinv(S) * C);
 
   % Find the negative eigenvalue
-  I = find(real(diag(geval)) < 1e-8 & ~isinf(diag(geval)));
+  I = find(real(diag(geval)) > 1e-8 & ~isinf(diag(geval)));
   
   % Extract eigenvector corresponding to negative eigenvalue
-  A = real(gevec(:,I));
+  A = real(gevec(:,I))
 else
   % New way, numerically stabler in C [gevec, geval] = eig(S,C);
   
@@ -103,7 +104,7 @@ else
   evec_y = -tmpE * A;
   A = [A; evec_y];
 end
-
+  
 % unnormalize
 par = [
   A(1)*sy*sy,   ...
@@ -116,7 +117,7 @@ par = [
       + A(6)*sx*sx*sy*sy   ...
       ]';
 
-disp(par)
+% disp(par)
 
 % Convert to geometric radii, and centers
 

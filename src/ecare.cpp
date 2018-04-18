@@ -1,6 +1,10 @@
 #include "ellipse.hpp"
 
+using namespace ecare;
+
 int main()
 {
-	return 0;
+	ellipse shape = ellipse();
+
+	return 0;	
 }

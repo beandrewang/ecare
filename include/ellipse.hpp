@@ -4,7 +4,7 @@
 #ifndef ECARE_ELLIPSE_Hh_
 #define ECARE_ELLIPSE_Hh_
 
-#include <dlib/geometry.h>
+#include <dlib/matrix.h>
 
 namespace ecare
 {
@@ -12,15 +12,22 @@ namespace ecare
 	{
 		struct feature
 		{
-			dlib::vector<double, 2> center;
-			double					axis_ratio;
-			double					rotation;
+			dlib::matrix<double, 2, 1> center;
+			double					a;
+			double 					b;
+			double					theta;
 		};
+
+		template <typename T> int sgn(T val) {
+		    return (T(0) < val) - (val < T(0));
+		}
 	public:
-		ellipse(dlib::matrix<double> points);
-		feature read_features() { return f }
+		ellipse();
+		ellipse(const dlib::matrix<double> points);
+		feature read_features() { return f; }
 	private:
-		bool ellipse_fitting(dlib::matrix<double> points);
+		bool ellipse_fitting(const dlib::matrix<double> points);
+		bool generate_points(dlib::matrix<double> &points);
 	private:
 		feature f;
 	};
