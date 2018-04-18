@@ -6,20 +6,20 @@ using namespace ecare;
 
 ellipse::ellipse()
 {
-	dlib::matrix<double> points;
+	mat points;
 	generate_points(points);
 	ellipse_fitting(points);
 }
 
-ellipse::ellipse(const dlib::matrix<double> points)
+ellipse::ellipse(const mat &points)
 {
 	ellipse_fitting(points);
 }
 
-bool ellipse::generate_points(dlib::matrix<double> &points)
+bool ellipse::generate_points(mat &points)
 {
 	// Create an ellipse
-	dlib::matrix<double> t = dlib::linspace(0, 2*M_PI, 100);
+	vec t = linspace<vec>(0, 2*M_PI, 100);
 	double Rx = 300.0;
 	double Ry = 200.0;
 	double Cx = 250.0;
@@ -28,57 +28,57 @@ bool ellipse::generate_points(dlib::matrix<double> &points)
 
 	double NoiseLevel = 1.0; // Will add Gaussian noise of this std.dev. to points
 
-	dlib::matrix<double> x = Rx * dlib::cos(t);
-	dlib::matrix<double> y = Ry * dlib::cos(t);
+	vec x = Rx * cos(t);
+	vec y = Ry * cos(t);
 
-	dlib::matrix<double> nx = x*cos(Rotation)-y*sin(Rotation) + Cx + dlib::randm(t.size(), 1)*NoiseLevel;
-	dlib::matrix<double> ny = x*sin(Rotation)+y*cos(Rotation) + Cy + dlib::randm(t.size(), 1)*NoiseLevel;
+	vec nx = x*cos(Rotation)-y*sin(Rotation) + Cx + randn<vec>(t.size())*NoiseLevel;
+	vec ny = x*sin(Rotation)+y*cos(Rotation) + Cy + randn<vec>(t.size())*NoiseLevel;
 
-	points = dlib::join_cols(nx, ny);
-	points = dlib::trans(points);
+	points = join_cols(nx, ny);
+	points = trans(points);
 
 	return true;
 }
 
-bool ellipse::ellipse_fitting(const dlib::matrix<double> points)
+bool ellipse::ellipse_fitting(const mat &points)
 {
 	//std::cout << "points = \n" << points << std::endl;
-	dlib::matrix<double> X = dlib::colm(points, 0);
-	dlib::matrix<double> Y = dlib::colm(points, 1);
+	mat X = points.col(0);
+	mat Y = points.col(1);
 	//std::cout << "X = \n" << X << "\n" << "Y = \n" << Y << std::endl;
 
 	// normalize data
-	double mx = dlib::mean(X);
-	double my = dlib::mean(Y);
-	double sx = (dlib::max(X) - dlib::min(X)) / 2;
-	double sy = (dlib::max(Y) - dlib::min(Y)) / 2;
+	double mx = mean(X);
+	double my = mean(Y);
+	double sx = (max(X) - min(X)) / 2;
+	double sy = (max(Y) - min(Y)) / 2;
 	//std::cout << "mx = \n" << mx << "\n" << "my = \n" << my << std::endl;
 
-	dlib::matrix<double> x = (X - mx) / sx;
-	dlib::matrix<double> y = (Y - my) / sy;
+	mat x = (X - mx) / sx;
+	mat y = (Y - my) / sy;
 	//std::cout << "x = \n" << x << "\n" << "y = \n" << y << std::endl;
 
 	// build design matrix
-	dlib::matrix<double> D;
-	D = dlib::join_rows(dlib::pointwise_multiply(x, x), dlib::pointwise_multiply(x, y));
-	D = dlib::join_rows(D, dlib::pointwise_multiply(y, y));
-	D = dlib::join_rows(D, x);
-	D = dlib::join_rows(D, y);
-	D = dlib::join_rows(D, dlib::ones_matrix<double>(x.size(), 1));
+	mat D;
+	D = join_rows(x % x, x % y);
+	D = join_rows(D, y % y);
+	D = join_rows(D, x);
+	D = join_rows(D, y);
+	D = join_rows(D, ones<vec>(size(x));
 	//std::cout << "D = \n" << D << std::endl;
 
 	// Build scatter matrix
-	dlib::matrix<double> S = dlib::trans(D) * D;
+	mat S = trans(D) * D;
+
 	std::cout << "S = \n" << S << std::endl;
-	std::cout << "pinv(S) = \n" << dlib::pinv(S) << std::endl;
-	std::cout << "I = \n" << S * dlib::pinv(S) << std::endl;
+	std::cout << "pinv(S) = \n" << pinv(S) << std::endl;
+	std::cout << "I = \n" << S * pinv(S) << std::endl;
 
 	// Build 6x6 constraint matrix
-	dlib::matrix<double> C = dlib::zeros_matrix<double>(6, 6);
+	mat C = zeros<mat>(6, 6);
 
-	C(0, 2) = 2; C(1, 1) = -1; C(2, 0) = 2;
-	std::cout << "C = \n" << C << std::endl;
 	#if 0
+	C(0, 2) = -2; C(1, 1) = 1; C(2, 0) = -2;
 	// genralized eig
 	dlib::matrix<double, 3, 3> tmpA = dlib::subm(S, dlib::range(0, 2), dlib::range(0, 2));
 	dlib::matrix<double, 3, 3> tmpB = dlib::subm(S, dlib::range(0, 2), dlib::range(3, 5));
@@ -93,7 +93,7 @@ bool ellipse::ellipse_fitting(const dlib::matrix<double> points)
 	dlib::matrix<double> v = ed.get_pseudo_v();
 	//std::cout << d << std::endl;
 	//std::cout << v << std::endl;
-	d = dlib::real(dlib::diag(d));
+	d = dlib::diag(d);
 	std::cout << d << std::endl;
 
 	int i;
@@ -106,39 +106,38 @@ bool ellipse::ellipse_fitting(const dlib::matrix<double> points)
 	}
 
 	// Extract eigenvector corresponding to negative eigenvalue
-	dlib::matrix<double> A = dlib::real(v(:, i))
+	dlib::matrix<double> A = dlib::colm(v, i);
 
 	// Recover the bottom half...
-	dlib::matrix<double> y = -tmpE * A;
-	A = 
+	dlib::matrix<double> yvec = -tmpE * A;
+	A = dlib::join_cols(A, yvec);
 	#else
-	dlib::eigenvalue_decomposition<dlib::matrix<double>> ed(dlib::pinv(S) * C);
-	dlib::matrix<double> d = ed.get_pseudo_d();
-	dlib::matrix<double> v = ed.get_pseudo_v();
-	int i;
-	for(i = 0; i < d.nr(); i++)
-	{
-		if (d(i, 0) > 1e-8 && std::isinf(d(i, 0)))
-		{
-			break;
-		}
-	}
+	C(0, 2) = -2; C(1, 1) = 1; C(2, 0) = -2;
 
-	dlib::matrix<double> A = dlib::colm(v, i);
+	cx_vec geval;
+	cx_mat gevec;
+	eig_pair(geval, gevec, S, C);
+
+	// Todo, here should be modified later
+	I = find(real(diag(geval)) < 1e-8));
+	
+	// Extract eigenvector corresponding to negative eigenvalue
+	vec A = v.colm(I);
 	#endif
+	std::cout << "C = \n" << C << std::endl;
 	std::cout << "d = \n" << d << std::endl;
 	std::cout << "v = \n" << v << std::endl;
 	std::cout << "A = \n" << A << std::endl;
 
 	#if 1
 	// unnormalize
-	dlib::matrix<double, 6, 1> par;
-	par(0, 0) = A(0, 0)*sy*sy;
-	par(1, 0) = A(1, 0)*sx*sy;
-	par(2, 0) = A(2, 0)*sx*sx;
-	par(3, 0) = -2*A(0, 0)*sy*sy*mx - A(1, 0)*sx*sy*my + A(3, 0)*sx*sy*sy;
-	par(4, 0) = -A(1, 0)*sx*sy*mx - 2*A(2, 0)*sx*sx*my + A(4, 0)*sx*sx*sy;
-	par(5, 0) = A(0, 0)*sy*sy*mx*mx + A(1, 0)*sx*sy*mx*my + A(2, 0)*sx*sx*my*my - A(3, 0)*sx*sy*sy*mx - A(4, 0)*sx*sx*sy*my + A(5, 0)*sx*sx*sy*sy;
+	vec par;
+	par(0) = A(0)*sy*sy;
+	par(1) = A(1)*sx*sy;
+	par(2) = A(2)*sx*sx;
+	par(3) = -2*A(0)*sy*sy*mx - A(1)*sx*sy*my + A(3)*sx*sy*sy;
+	par(4) = -A(1)*sx*sy*mx - 2*A(2)*sx*sx*my + A(4)*sx*sx*sy;
+	par(5) = A(0)*sy*sy*mx*mx + A(1)*sx*sy*mx*my + A(2)*sx*sx*my*my - A(3)*sx*sy*sy*mx - A(4)*sx*sx*sy*my + A(5)*sx*sx*sy*sy;
 
 	//std::cout << "par = \n" << par << std::endl;
 	#endif
@@ -177,7 +176,7 @@ bool ellipse::ellipse_fitting(const dlib::matrix<double> points)
 	f.b 	 = Rv;
 	f.theta  = thetarad;
 
-	std::cout << f.center << "\n" << f.a << "\n" << f.b << "\n" << f.theta << std::endl;
+	std::cout << f.cx << f.cy << "\n" << f.a << "\n" << f.b << "\n" << f.theta << std::endl;
 
 	return true;
 }

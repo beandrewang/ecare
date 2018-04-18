@@ -4,7 +4,10 @@
 #ifndef ECARE_ELLIPSE_Hh_
 #define ECARE_ELLIPSE_Hh_
 
-#include <dlib/matrix.h>
+#include <armadillo>
+
+using namespace std;
+using namespace arma;
 
 namespace ecare
 {
@@ -12,22 +15,20 @@ namespace ecare
 	{
 		struct feature
 		{
-			dlib::matrix<double, 2, 1> center;
+			double					cx;
+			double					cy;
 			double					a;
 			double 					b;
 			double					theta;
 		};
 
-		template <typename T> int sgn(T val) {
-		    return (T(0) < val) - (val < T(0));
-		}
 	public:
 		ellipse();
-		ellipse(const dlib::matrix<double> points);
+		ellipse(const mat &points);
 		feature read_features() { return f; }
 	private:
-		bool ellipse_fitting(const dlib::matrix<double> points);
-		bool generate_points(dlib::matrix<double> &points);
+		bool ellipse_fitting(const mat &points);
+		bool generate_points(mat &points);
 	private:
 		feature f;
 	};

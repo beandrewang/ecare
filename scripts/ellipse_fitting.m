@@ -71,19 +71,21 @@ D = [ x.*x  x.*y  y.*y  x  y  ones(size(x)) ];
 S = D'*D
 
 % Build 6x6 constraint matrix
-C(6,6) = 0; C(1,3) = 2; C(2,2) = -1; C(3,1) = 2;
+
 
 % Solve eigensystem
 if 1
+  C(6,6) = 0; C(1,3) = -2; C(2,2) = 1; C(3,1) = -2;
   % Old way, numerically unstable if not implemented in matlab
-  [gevec, geval] = eig(pinv(S) * C);
+  [gevec, geval] = eig(S, C);
 
   % Find the negative eigenvalue
-  I = find(real(diag(geval)) > 1e-8 & ~isinf(diag(geval)));
+  I = find(real(diag(geval)) < 1e-8 & ~isinf(diag(geval)));
   
   % Extract eigenvector corresponding to negative eigenvalue
   A = real(gevec(:,I))
 else
+  C(6,6) = 0; C(1,3) = -2; C(2,2) = 1; C(3,1) = -2;
   % New way, numerically stabler in C [gevec, geval] = eig(S,C);
   
   % Break into blocks
@@ -106,8 +108,7 @@ else
 end
   
 % unnormalize
-par = [
-  A(1)*sy*sy,   ...
+par = [A(1)*sy*sy,   ...
       A(2)*sx*sy,   ...
       A(3)*sx*sx,   ...
       -2*A(1)*sy*sy*mx - A(2)*sx*sy*my + A(4)*sx*sy*sy,   ...
