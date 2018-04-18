@@ -7,3 +7,6 @@
 [submodule "modules/mlpack"]
 	path = modules/mlpack
 	url = https://github.com/mlpack/mlpack
+[submodule "modules/matlab2cpp"]
+	path = modules/matlab2cpp
+	url = https://github.com/jonathf/matlab2cpp
