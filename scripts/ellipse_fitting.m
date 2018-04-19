@@ -65,16 +65,16 @@ x = x(:);
 y = y(:);
 
 % Build design matrix
-D = [ x.*x  x.*y  y.*y  x  y  ones(size(x)) ];
+D = [ x.*x  x.*y  y.*y  x  y  ones(size(x)) ]
 
 % Build scatter matrix
-S = D'*D
+S = D'*D;
 
 % Build 6x6 constraint matrix
 
 
 % Solve eigensystem
-if 1
+if 0
   C(6,6) = 0; C(1,3) = -2; C(2,2) = 1; C(3,1) = -2;
   % Old way, numerically unstable if not implemented in matlab
   [gevec, geval] = eig(S, C);
@@ -85,26 +85,36 @@ if 1
   % Extract eigenvector corresponding to negative eigenvalue
   A = real(gevec(:,I))
 else
+  S = [
+    3.7243e+01  -3.7361e+01   3.7482e+01   4.8177e-01  -5.0223e-01   4.9913e+01;
+  -3.7361e+01   3.7482e+01  -3.7604e+01  -5.0223e-01   5.2224e-01  -5.0074e+01;
+   3.7482e+01  -3.7604e+01   3.7728e+01   5.2224e-01  -5.4180e-01   5.0238e+01;
+   4.8177e-01  -5.0223e-01   5.2224e-01   4.9913e+01  -5.0074e+01  -3.2085e-14;
+  -5.0223e-01   5.2224e-01  -5.4180e-01  -5.0074e+01   5.0238e+01   3.2196e-15;
+   4.9913e+01  -5.0074e+01   5.0238e+01  -3.2085e-14   3.2196e-15   1.0000e+02;]
   C(6,6) = 0; C(1,3) = -2; C(2,2) = 1; C(3,1) = -2;
   % New way, numerically stabler in C [gevec, geval] = eig(S,C);
   
   % Break into blocks
-  tmpA = S(1:3,1:3); 
-  tmpB = S(1:3,4:6); 
-  tmpC = S(4:6,4:6); 
-  tmpD = C(1:3,1:3);
-  tmpE = inv(tmpC)*tmpB';
-  [evec_x, eval_x] = eig(inv(tmpD) * (tmpA - tmpB*tmpE));
+  tmpA = S(1:3,1:3)
+  tmpB = S(1:3,4:6)
+  tmpC = S(4:6,4:6)
+  tmpD = C(1:3,1:3)
+  tmpE = inv(tmpC)*tmpB'
+  inv_tmpC = inv(tmpC)
+  [evec_x, eval_x] = eig(inv(tmpD) * (tmpA - tmpB*tmpE))
+
+  eig1 = inv(tmpD) * (tmpA - tmpB*tmpE)
   
   % Find the positive (as det(tmpD) < 0) eigenvalue
-  I = find(real(diag(eval_x)) < 1e-8 & ~isinf(diag(eval_x)));
+  I = find(real(diag(eval_x)) < 1e-8 & ~isinf(diag(eval_x)))
   
   % Extract eigenvector corresponding to negative eigenvalue
-  A = real(evec_x(:,I));
+  A = real(evec_x(:,I))
   
   % Recover the bottom half...
-  evec_y = -tmpE * A;
-  A = [A; evec_y];
+  evec_y = -tmpE * A
+  A = [A; evec_y]
 end
   
 % unnormalize
@@ -116,39 +126,38 @@ par = [A(1)*sy*sy,   ...
       A(1)*sy*sy*mx*mx + A(2)*sx*sy*mx*my + A(3)*sx*sx*my*my   ...
       - A(4)*sx*sy*sy*mx - A(5)*sx*sx*sy*my   ...
       + A(6)*sx*sx*sy*sy   ...
-      ]';
+      ]'
 
-disp(par)
 
 % Convert to geometric radii, and centers
 
-thetarad = 0.5*atan2(par(2),par(1) - par(3));
-cost = cos(thetarad);
-sint = sin(thetarad);
-sin_squared = sint.*sint;
-cos_squared = cost.*cost;
-cos_sin = sint .* cost;
+thetarad = 0.5*atan2(par(2),par(1) - par(3))
+cost = cos(thetarad)
+sint = sin(thetarad)
+sin_squared = sint.*sint
+cos_squared = cost.*cost
+cos_sin = sint .* cost
 
-Ao = par(6);
-Au =   par(4) .* cost + par(5) .* sint;
-Av = - par(4) .* sint + par(5) .* cost;
-Auu = par(1) .* cos_squared + par(3) .* sin_squared + par(2) .* cos_sin;
-Avv = par(1) .* sin_squared + par(3) .* cos_squared - par(2) .* cos_sin;
+Ao = par(6)
+Au =   par(4) .* cost + par(5) .* sint
+Av = - par(4) .* sint + par(5) .* cost
+Auu = par(1) .* cos_squared + par(3) .* sin_squared + par(2) .* cos_sin
+Avv = par(1) .* sin_squared + par(3) .* cos_squared - par(2) .* cos_sin
 
 % ROTATED = [Ao Au Av Auu Avv]
 
-tuCentre = - Au./(2.*Auu);
-tvCentre = - Av./(2.*Avv);
-wCentre = Ao - Auu.*tuCentre.*tuCentre - Avv.*tvCentre.*tvCentre;
+tuCentre = - Au./(2.*Auu)
+tvCentre = - Av./(2.*Avv)
+wCentre = Ao - Auu.*tuCentre.*tuCentre - Avv.*tvCentre.*tvCentre
 
-uCentre = tuCentre .* cost - tvCentre .* sint;
-vCentre = tuCentre .* sint + tvCentre .* cost;
+uCentre = tuCentre .* cost - tvCentre .* sint
+vCentre = tuCentre .* sint + tvCentre .* cost
 
-Ru = -wCentre./Auu;
-Rv = -wCentre./Avv;
+Ru = -wCentre./Auu
+Rv = -wCentre./Avv
 
 Ru = sqrt(abs(Ru)).*sign(Ru);
 Rv = sqrt(abs(Rv)).*sign(Rv);
 
-coeffs = [uCentre, vCentre, Ru, Rv, thetarad];
+coeffs = [uCentre, vCentre, Ru, Rv, thetarad]
 end
