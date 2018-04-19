@@ -4,6 +4,17 @@ The main objective of this project is to implement a falling detector, using the
 
 ## build
 
+## build armadillo-code
+
+```
+cd module/armadillo-code
+mkdir build
+cmake ../ -DCMAKE_INSTALL_PREFIX:PATH=../dev
+make & make install
+```
+
+You will get directory `dev`, which consist of include and libs ,in armadillo-code,
+
 ```
 mkdir build
 cd build

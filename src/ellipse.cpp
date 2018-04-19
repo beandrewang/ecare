@@ -5,20 +5,20 @@ using namespace ecare;
 
 ellipse::ellipse()
 {
-	mat points;
-	generate_points(points);
-	ellipse_fitting(points);
+	generate_points();
+	ellipse_fitting();
 }
 
-ellipse::ellipse(const mat &points)
+ellipse::ellipse(const mat points)
 {
-	ellipse_fitting(points);
+	scatter = points;
+	ellipse_fitting();
 }
 
-bool ellipse::generate_points(mat &points)
+bool ellipse::generate_points()
 {
 	// Create an ellipse
-	vec t = linspace<vec>(0, 2*M_PI, 100);
+	vec t = linspace<vec>(0, 2 * datum::pi, 100);
 	double Rx = 300.0;
 	double Ry = 200.0;
 	double Cx = 250.0;
@@ -33,16 +33,16 @@ bool ellipse::generate_points(mat &points)
 	vec nx = x*cos(Rotation)-y*sin(Rotation) + Cx + randn<vec>(t.size())*NoiseLevel;
 	vec ny = x*sin(Rotation)+y*cos(Rotation) + Cy + randn<vec>(t.size())*NoiseLevel;
 
-	points = join_rows(nx, ny);
-	cout << points << endl;
+	scatter = join_rows(nx, ny);
+	cout << scatter << endl;
 	return true;
 }
 
-bool ellipse::ellipse_fitting(const mat &points)
+bool ellipse::ellipse_fitting()
 {
 	//std::cout << "points = \n" << points << std::endl;
-	vec X = points.col(0);
-	vec Y = points.col(1);
+	vec X = scatter.col(0);
+	vec Y = scatter.col(1);
 	std::cout << "X = \n" << X << "\n" << "Y = \n" << Y << std::endl;
 
 	// normalize data
