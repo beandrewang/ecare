@@ -34,18 +34,17 @@ bool ellipse::generate_points(mat &points)
 	vec nx = x*cos(Rotation)-y*sin(Rotation) + Cx + randn<vec>(t.size())*NoiseLevel;
 	vec ny = x*sin(Rotation)+y*cos(Rotation) + Cy + randn<vec>(t.size())*NoiseLevel;
 
-	points = join_cols(nx, ny);
-	points = trans(points);
-
+	points = join_rows(nx, ny);
+	cout << points << endl;
 	return true;
 }
 
 bool ellipse::ellipse_fitting(const mat &points)
 {
 	//std::cout << "points = \n" << points << std::endl;
-	mat X = points.col(0);
-	mat Y = points.col(1);
-	//std::cout << "X = \n" << X << "\n" << "Y = \n" << Y << std::endl;
+	vec X = points.col(0);
+	vec Y = points.col(1);
+	std::cout << "X = \n" << X << "\n" << "Y = \n" << Y << std::endl;
 
 	// normalize data
 	double mx = mean(X);
@@ -64,7 +63,7 @@ bool ellipse::ellipse_fitting(const mat &points)
 	D = join_rows(D, y % y);
 	D = join_rows(D, x);
 	D = join_rows(D, y);
-	D = join_rows(D, ones<vec>(size(x));
+	D = join_rows(D, ones<vec>(size(x)));
 	//std::cout << "D = \n" << D << std::endl;
 
 	// Build scatter matrix
@@ -72,7 +71,6 @@ bool ellipse::ellipse_fitting(const mat &points)
 
 	std::cout << "S = \n" << S << std::endl;
 	std::cout << "pinv(S) = \n" << pinv(S) << std::endl;
-	std::cout << "I = \n" << S * pinv(S) << std::endl;
 
 	// Build 6x6 constraint matrix
 	mat C = zeros<mat>(6, 6);
@@ -119,19 +117,18 @@ bool ellipse::ellipse_fitting(const mat &points)
 	eig_pair(geval, gevec, S, C);
 
 	// Todo, here should be modified later
-	I = find(real(diag(geval)) < 1e-8));
-	
+	uvec I = find(real(geval.diag()) < 1e-8 && geval.diag() != datum::inf);
+	cout << "I = \n" << I << endl;
 	// Extract eigenvector corresponding to negative eigenvalue
-	vec A = v.colm(I);
+	vec A = real(gevec.col(I(0)));
 	#endif
 	std::cout << "C = \n" << C << std::endl;
-	std::cout << "d = \n" << d << std::endl;
-	std::cout << "v = \n" << v << std::endl;
+	std::cout << "geval = \n" << geval << std::endl;
+	std::cout << "gevec = \n" << gevec << std::endl;
 	std::cout << "A = \n" << A << std::endl;
 
-	#if 1
 	// unnormalize
-	vec par;
+	vec par(6);
 	par(0) = A(0)*sy*sy;
 	par(1) = A(1)*sx*sy;
 	par(2) = A(2)*sx*sx;
@@ -139,22 +136,25 @@ bool ellipse::ellipse_fitting(const mat &points)
 	par(4) = -A(1)*sx*sy*mx - 2*A(2)*sx*sx*my + A(4)*sx*sx*sy;
 	par(5) = A(0)*sy*sy*mx*mx + A(1)*sx*sy*mx*my + A(2)*sx*sx*my*my - A(3)*sx*sy*sy*mx - A(4)*sx*sx*sy*my + A(5)*sx*sx*sy*sy;
 
-	//std::cout << "par = \n" << par << std::endl;
-	#endif
+	std::cout << "par = \n" << par << std::endl;
 
 	// Convert to geometric radii, and centers
-	double thetarad = 0.5 * atan2(par(2), par(1) - par(3));
+	double thetarad = 0.5 * atan2(par(1), par(0) - par(2));
 	double cost = cos(thetarad);
 	double sint = sin(thetarad);
 	double sin_squared = sint * sint;
 	double cos_squared = cost *cost;
 	double cos_sin = sint * cost;
 
-	double Ao = par(6);
-	double Au =   par(4) * cost + par(5) * sint;
-	double Av = - par(4) * sint + par(5) * cost;
-	double Auu = par(1) * cos_squared + par(3) * sin_squared + par(2) * cos_sin;
-	double Avv = par(1) * sin_squared + par(3) * cos_squared - par(2) * cos_sin;
+	std::cout << "cos_sin = \n" << cos_sin << std::endl;
+
+	double Ao = par(4);
+	double Au =   par(3) * cost + par(4) * sint;
+	double Av = - par(3) * sint + par(4) * cost;
+	double Auu = par(0) * cos_squared + par(2) * sin_squared + par(1) * cos_sin;
+	double Avv = par(0) * sin_squared + par(2) * cos_squared - par(1) * cos_sin;
+
+	std::cout << "Avv = \n" << Avv << std::endl;
 
 	// % ROTATED = [Ao Au Av Auu Avv]
 	double tuCentre = - Au/(2*Auu);
@@ -167,11 +167,18 @@ bool ellipse::ellipse_fitting(const mat &points)
 	double Ru = -wCentre/Auu;
 	double Rv = -wCentre/Avv;
 
-	Ru = sqrt(fabs(Ru))*sgn(Ru);
-	Rv = sqrt(fabs(Rv))*sgn(Rv);
+	std::cout << "Rv = \n" << Rv << std::endl;
+	vec u(1);
+	u(0) = Ru;
+	vec v(1);
+	v(0) = Rv;
 
-	f.center = uCentre, 
-			   vCentre;
+	std::cout << "v = \n" << v << std::endl;
+	Ru = sqrt(abs(Ru))*sign(u).eval()(0, 0);
+	Rv = sqrt(abs(Rv))*sign(v).eval()(0, 0);
+
+	f.cx = uCentre;
+	f.cy = vCentre;
 	f.a      = Ru;
 	f.b 	 = Rv;
 	f.theta  = thetarad;
