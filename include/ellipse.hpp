@@ -27,6 +27,9 @@ namespace ecare
 		ellipse(const mat &points);
 		feature read_features() { return f; }
 	private:
+		template <typename T> int sgn(T val) {
+		    return (T(0) < val) - (val < T(0));
+		}
 		bool ellipse_fitting(const mat &points);
 		bool generate_points(mat &points);
 	private:

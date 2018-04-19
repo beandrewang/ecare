@@ -118,7 +118,7 @@ par = [A(1)*sy*sy,   ...
       + A(6)*sx*sx*sy*sy   ...
       ]';
 
-% disp(par)
+disp(par)
 
 % Convert to geometric radii, and centers
 
