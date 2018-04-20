@@ -26,7 +26,7 @@ After building, you can get your excutable application `ecare` in `build` direct
 
 ## Human body modeling
 
-Modeling the people skeloton with ellipse, take a reference from [paper](https://github.com/beandrewang/ecare/blob/master/src/scripts/ellipse-specific-fitting.pdf)
+Modeling the people skeloton with ellipse, take a reference from [Direct Least Square Fitting of Ellipse, Andrew W. Fitzigibbon](https://github.com/beandrewang/ecare/blob/master/ref/ellipse-specific-fitting.pdf)
 
 We set the feature of an ellipse like bellow:
 
