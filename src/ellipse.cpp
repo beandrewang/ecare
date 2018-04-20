@@ -9,7 +9,7 @@ ellipse::ellipse()
 	ellipse_fitting();
 }
 
-ellipse::ellipse(const mat points)
+ellipse::ellipse(const mat &points)
 {
 	scatter = points;
 	ellipse_fitting();
@@ -24,7 +24,7 @@ bool ellipse::generate_points()
 	int Cx = 250;
 	int Cy = 150;
 	double Rotation = datum::pi + 0.1; //Radians
-	double NoiseLevel = 0.0; // Will add Gaussian noise of this std.dev. to points
+	double NoiseLevel = 10.0; // Will add Gaussian noise of this std.dev. to points
 
 	vec x = Rx * cos(t);
 	vec y = Ry * sin(t);
@@ -43,6 +43,7 @@ bool ellipse::normalize(vec &x, vec &y)
 	x = scatter.col(0);
 	y = scatter.col(1);
 
+	// normalize data
 	mx = mean(x);
 	my = mean(y);
 	sx = (max(x) - min(x)) / 2;
@@ -54,8 +55,9 @@ bool ellipse::normalize(vec &x, vec &y)
 	return true;
 }
 
-bool ellipse::construct_features(const vec &x, const vec &y, mat &S)
+bool ellipse::design_matrix(const vec &x, const vec &y, mat &S)
 {
+	// Build design matrix
 	mat D;
 	D = join_rows(x % x, x % y);
 	D = join_rows(D, y % y);
@@ -70,15 +72,16 @@ bool ellipse::construct_features(const vec &x, const vec &y, mat &S)
 
 bool ellipse::solve_equation(const mat &S, vec &A)
 {
+	// build 6x6 constraint matrix
 	mat C = zeros<mat>(6, 6);
-	C(0, 2) = 2.0; C(1, 1) = -1.0; C(2, 0) = 2.0;
+	C(0, 2) = -2.0; C(1, 1) = 1.0; C(2, 0) = -2.0;
 	//std::cout << "S = \n" << S << std::endl;
 
+	// New way, numerically stabler in C [gevec, geval] = eig(S,C);
+	// Break into blocks
 	mat tmpA = S(span(0, 2), span(0, 2));
 	mat tmpB = S(span(0, 2), span(3, 5));
 	mat tmpC = S(span(3, 5), span(3, 5));
-	//cout << "tmpC = \n" << tmpC << endl;
-	//cout << "invC = \n" << inv(tmpC) << endl;
 	mat tmpD = C(span(0, 2), span(0, 2)); 
 	//mat tmpE = inv(tmpC) * trans(tmpB);
 	mat tmpE = solve(tmpC, trans(tmpB));
@@ -88,8 +91,13 @@ bool ellipse::solve_equation(const mat &S, vec &A)
 	//eig_gen(geval, gevec, inv(tmpD) * (tmpA - tmpB * tmpE));
 	eig_gen(geval, gevec,solve(tmpD, (tmpA - tmpB * tmpE)));
 
+	// Find the negative (as det(tmpD) < 0) eigenvalue
 	uvec I = find(real(geval.diag()) < 1e-8 && geval.diag() != datum::inf);
+
+	// Extract eigenvector corresponding to negative eigenvalue
 	A = real(gevec.col(I(0)));
+
+	// Recover the bottom half...
 	vec evec_y = -tmpE * A;
 	A = join_cols(A, evec_y);
 
@@ -98,6 +106,7 @@ bool ellipse::solve_equation(const mat &S, vec &A)
 
 bool ellipse::unnormalize(const vec &A, vec &par)
 {
+	// unnormalize
 	par << A(0) * sy * sy << endr
 	    << A(1) * sx * sy << endr
 	    << A(2) * sx * sx << endr
@@ -109,8 +118,9 @@ bool ellipse::unnormalize(const vec &A, vec &par)
 	return true;
 }
 
-bool ellipse::computer_features(const vec &par)
+bool ellipse::computer_geometry(const vec &par)
 {
+	// Convert to geometric radii, and centers
 	double thetarad = 0.5 * atan2(par(1), par(0) - par(2));
 	double cost = cos(thetarad);
 	double sint = sin(thetarad);
@@ -118,44 +128,27 @@ bool ellipse::computer_features(const vec &par)
 	double cos_squared = cost *cost;
 	double cos_sin = sint * cost;
 
-	double Ao = par(5);
-	double Au =   par(3) * cost + par(4) * sint;
-	double Av = - par(3) * sint + par(4) * cost;
+	double Ao =  par(5);
+	double Au =  par(3) * cost + par(4) * sint;
+	double Av = -par(3) * sint + par(4) * cost;
 	double Auu = par(0) * cos_squared + par(2) * sin_squared + par(1) * cos_sin;
 	double Avv = par(0) * sin_squared + par(2) * cos_squared - par(1) * cos_sin;
 
-	double tuCentre = - Au/(2*Auu);
-	double tvCentre = - Av/(2*Avv);
-	double wCentre = Ao - Auu*tuCentre*tuCentre - Avv*tvCentre*tvCentre;
+	// ROTATED = [Ao Au Av Auu Avv];
+	double tuCentre = - Au / (2 * Auu);
+	double tvCentre = - Av / (2 * Avv);
+	double wCentre = Ao - Auu * tuCentre * tuCentre - Avv * tvCentre * tvCentre;
 
 	double uCentre = tuCentre * cost - tvCentre * sint;
 	double vCentre = tuCentre * sint + tvCentre * cost;
 
-	double Ru = -wCentre/Auu;
-	double Rv = -wCentre/Avv;
+	double Ru = -wCentre / Auu;
+	double Rv = -wCentre / Avv;
 
-	int Su = 0;
-	if(Ru > 0)
-	{
-		Su = 1;
-	}
-	else if(Ru < 0)
-	{
-		Su = -1;
-	}
-
-	int Sv = 0;
-	if(Rv > 0)
-	{
-		Sv = 1;
-	}
-	else if(Rv < 0)
-	{
-		Sv = -1;
-	}
-
-	Ru = sqrt(abs(Ru)) * Su;
-	Rv = sqrt(abs(Rv)) * Sv;
+	// signum function implementation
+	// (x > 0) - (x < 0)
+	Ru = sqrt(abs(Ru)) * ((Ru > 0) - (Ru < 0));
+	Rv = sqrt(abs(Rv)) * ((Rv > 0) - (Rv < 0));
 
 	f.cx = uCentre;
 	f.cy = vCentre;
@@ -175,9 +168,10 @@ bool ellipse::ellipse_fitting()
 	vec A;
 	vec par;
 	normalize(x, y);
-	construct_features(x, y, D);
+	design_matrix(x, y, D);
 	solve_equation(D, A);
 	unnormalize(A, par);
-	computer_features(par);
+	computer_geometry(par);
+
 	return true;
 }

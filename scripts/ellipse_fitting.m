@@ -12,11 +12,11 @@ if nargin == 0
   % Create an ellipse
   t = linspace(0, 2*pi);
   
-  Rx = 500;
-  Ry = 300;
+  Rx = 300;
+  Ry = 200;
   Cx = 250;
   Cy = 150;
-  Rotation = pi/2 + 0.1; % Radians
+  Rotation = pi + 0.1; % Radians
   
   NoiseLevel = 10.0; % Will add Gaussian noise of this std.dev. to points
   
@@ -74,7 +74,7 @@ S = D'*D;
 
 
 % Solve eigensystem
-if 1
+if 0
   C(6,6) = 0; C(1,3) = -2; C(2,2) = 1; C(3,1) = -2;
   % Old way, numerically unstable if not implemented in matlab
   [gevec, geval] = eig(S, C);
