@@ -24,16 +24,23 @@ namespace ecare
 
 	public:
 		ellipse();
-		ellipse(const mat &points);
+		ellipse(const mat points);
 		feature read_features() { return f; }
 	private:
-		template <typename T> int sgn(T val) {
-		    return (T(0) < val) - (val < T(0));
-		}
-		bool ellipse_fitting(const mat &points);
-		bool generate_points(mat &points);
+		bool ellipse_fitting();
+		bool generate_points();
+		bool construct_features(const vec &x, const vec &y, mat &S);
+		bool solve_equation(const mat &S, vec &A);
+		bool normalize(vec &x, vec &y);
+		bool unnormalize(const vec &A, vec &par);
+		bool computer_features(const vec &par);
 	private:
 		feature f;
+		mat scatter;
+		double mx;
+		double my;
+		double sx;
+		double sy;
 	};
 }
 
