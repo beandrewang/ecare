@@ -80,11 +80,13 @@ bool ellipse::solve_equation(const mat &S, vec &A)
 	//cout << "tmpC = \n" << tmpC << endl;
 	//cout << "invC = \n" << inv(tmpC) << endl;
 	mat tmpD = C(span(0, 2), span(0, 2)); 
-	mat tmpE = inv(tmpC) * trans(tmpB);
+	//mat tmpE = inv(tmpC) * trans(tmpB);
+	mat tmpE = solve(tmpC, trans(tmpB));
 
 	cx_vec geval;
 	cx_mat gevec;
-	eig_gen(geval, gevec, inv(tmpD) * (tmpA - tmpB * tmpE));
+	//eig_gen(geval, gevec, inv(tmpD) * (tmpA - tmpB * tmpE));
+	eig_gen(geval, gevec,solve(tmpD, (tmpA - tmpB * tmpE)));
 
 	uvec I = find(real(geval.diag()) < 1e-8 && geval.diag() != datum::inf);
 	A = real(gevec.col(I(0)));
@@ -162,6 +164,8 @@ bool ellipse::computer_features(const vec &par)
 	f.theta  = thetarad;
 
 	cout << "Returned = \n" << f.cx << "\t" << f.cy << "\t" << f.a << "\t" << f.b << "\t" << f.theta * 180 / datum::pi << endl;
+
+	return true;
 }
 
 bool ellipse::ellipse_fitting()
