@@ -18,19 +18,19 @@ ellipse::ellipse(const mat &points)
 bool ellipse::generate_points()
 {
 	// Create an ellipse
-	vec t = linspace<vec>(0, 2 * datum::pi);
+	vec t = linspace(0, 2 * pi, 100);
 	int Rx = 300;
 	int Ry = 200;
 	int Cx = 250;
 	int Cy = 150;
-	double Rotation = datum::pi + 0.1; //Radians
+	double Rotation = pi + 0.1; //Radians
 	double NoiseLevel = 10.0; // Will add Gaussian noise of this std.dev. to points
 
 	vec x = Rx * cos(t);
 	vec y = Ry * sin(t);
 
-	vec nx = x*cos(Rotation)-y*sin(Rotation) + Cx + randn<vec>(t.size())*NoiseLevel;
-	vec ny = x*sin(Rotation)+y*cos(Rotation) + Cy + randn<vec>(t.size())*NoiseLevel;
+	vec nx = x * cos(Rotation) - y * sin(Rotation) + Cx + randm(t.size(), 1) * NoiseLevel;
+	vec ny = x * sin(Rotation) + y * cos(Rotation) + Cy + randm(t.size(), 1) * NoiseLevel;
 
 	scatter = join_rows(nx, ny);
 	
@@ -40,8 +40,8 @@ bool ellipse::generate_points()
 
 bool ellipse::normalize(vec &x, vec &y)
 {
-	x = scatter.col(0);
-	y = scatter.col(1);
+	x = colm(scatter, 0);
+	y = colm(scatter, 1);
 
 	// normalize data
 	mx = mean(x);
@@ -63,9 +63,9 @@ bool ellipse::design_matrix(const vec &x, const vec &y, mat &S)
 	D = join_rows(D, y % y);
 	D = join_rows(D, x);
 	D = join_rows(D, y);
-	D = join_rows(D, ones<vec>(size(x)));
+	D = join_rows(D, ones_matrix(size(x), 1));
 	
-	S = D.t() * D;
+	S = trans(D) * D;
 
 	return true;
 }
@@ -73,26 +73,26 @@ bool ellipse::design_matrix(const vec &x, const vec &y, mat &S)
 bool ellipse::solve_equation(const mat &S, vec &A)
 {
 	// build 6x6 constraint matrix
-	mat C = zeros<mat>(6, 6);
+	mat C = zeros_matrix(6, 6);
 	C(0, 2) = -2.0; C(1, 1) = 1.0; C(2, 0) = -2.0;
 	//std::cout << "S = \n" << S << std::endl;
 
 	// New way, numerically stabler in C [gevec, geval] = eig(S,C);
 	// Break into blocks
-	mat tmpA = S(span(0, 2), span(0, 2));
-	mat tmpB = S(span(0, 2), span(3, 5));
-	mat tmpC = S(span(3, 5), span(3, 5));
-	mat tmpD = C(span(0, 2), span(0, 2)); 
+	mat tmpA = subm(S, range(0, 2), range(0, 2));
+	mat tmpB = subm(S, range(0, 2), range(3, 5));
+	mat tmpC = subm(S, range(3, 5), range(3, 5));
+	mat tmpD = subm(C, range(0, 2), range(0, 2)); 
 	//mat tmpE = inv(tmpC) * trans(tmpB);
 	mat tmpE = solve(tmpC, trans(tmpB));
 
-	cx_vec geval;
-	cx_mat gevec;
-	//eig_gen(geval, gevec, inv(tmpD) * (tmpA - tmpB * tmpE));
-	eig_gen(geval, gevec,solve(tmpD, (tmpA - tmpB * tmpE)));
+	eigenvalue_decomposition eig(solve(tmpD, (tmpA - tmpB * tmpE)));
+
+	mat geval = eig.get_real_eigenvalues();
+	mat gevec = eig.get_pseudo_v();
 
 	// Find the negative (as det(tmpD) < 0) eigenvalue
-	uvec I = find(real(geval.diag()) < 1e-8 && geval.diag() != datum::inf);
+	vec I = find(geval < 1e-8 && geval != inf);
 
 	// Extract eigenvector corresponding to negative eigenvalue
 	A = real(gevec.col(I(0)));

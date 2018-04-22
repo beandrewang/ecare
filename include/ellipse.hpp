@@ -4,13 +4,13 @@
 #ifndef ECARE_ELLIPSE_Hh_
 #define ECARE_ELLIPSE_Hh_
 
-#include <armadillo>
+#include <dlib/matrix.h>
 
 namespace ecare
 {
 	using namespace std;
-	using namespace arma;
-	
+	using namespace dlib;
+
 	class ellipse
 	{
 		struct feature
@@ -21,7 +21,8 @@ namespace ecare
 			double 					b;
 			double					theta;
 		};
-
+		typedef matrix<double> mat;
+		typedef matrix<double> vec;
 	public:
 		ellipse();
 		ellipse(const mat &points);
