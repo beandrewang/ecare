@@ -6,11 +6,11 @@
 
 #include <armadillo>
 
-using namespace std;
-using namespace arma;
-
 namespace ecare
 {
+	using namespace std;
+	using namespace arma;
+	
 	class ellipse
 	{
 		struct feature

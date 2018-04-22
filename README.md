@@ -4,7 +4,7 @@ The main objective of this project is to implement a falling detector, using the
 
 ## build
 
-## build armadillo-code
+### build armadillo-code
 
 ```
 cd module/armadillo-code

@@ -107,6 +107,7 @@ bool ellipse::solve_equation(const mat &S, vec &A)
 bool ellipse::unnormalize(const vec &A, vec &par)
 {
 	// unnormalize
+	// refer to https://github.com/beandrewang/ecare/blob/master/ref/ellipse_parameter_unnormalize.htm
 	par << A(0) * sy * sy << endr
 	    << A(1) * sx * sy << endr
 	    << A(2) * sx * sx << endr
