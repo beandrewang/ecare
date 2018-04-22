@@ -18,12 +18,12 @@ ellipse::ellipse(const mat &points)
 bool ellipse::generate_points()
 {
 	// Create an ellipse
-	vec t = linspace(0, 2 * pi);
+	vec t = linspace<vec>(0, 2 * datum::pi);
 	int Rx = 300;
 	int Ry = 200;
 	int Cx = 250;
 	int Cy = 150;
-	double Rotation = pi + 0.1; //Radians
+	double Rotation = datum::pi + 0.1; //Radians
 	double NoiseLevel = 10.0; // Will add Gaussian noise of this std.dev. to points
 
 	vec x = Rx * cos(t);
@@ -63,7 +63,7 @@ bool ellipse::design_matrix(const vec &x, const vec &y, mat &S)
 	D = join_rows(D, y % y);
 	D = join_rows(D, x);
 	D = join_rows(D, y);
-	D = join_rows(D, ones_matrix<double>(size(x), 1));
+	D = join_rows(D, ones<vec>(size(x)));
 	
 	S = D.t() * D;
 
@@ -73,28 +73,27 @@ bool ellipse::design_matrix(const vec &x, const vec &y, mat &S)
 bool ellipse::solve_equation(const mat &S, vec &A)
 {
 	// build 6x6 constraint matrix
-	mat C = zeros_matrix<double>(6, 6);
+	mat C = zeros<mat>(6, 6);
 	C(0, 2) = -2.0; C(1, 1) = 1.0; C(2, 0) = -2.0;
 	//std::cout << "S = \n" << S << std::endl;
 
 	// New way, numerically stabler in C [gevec, geval] = eig(S,C);
 	// Break into blocks
-	mat tmpA = subm(S, range(0, 2), range(0, 2));
-	mat tmpB = subm(S, range(0, 2), range(3, 5));
-	mat tmpC = subm(S, range(3, 5), range(3, 5));
-	mat tmpD = subm(C, range(0, 2), range(0, 2)); 
+	mat tmpA = S(span(0, 2), span(0, 2));
+	mat tmpB = S(span(0, 2), span(3, 5));
+	mat tmpC = S(span(3, 5), span(3, 5));
+	mat tmpD = C(span(0, 2), span(0, 2)); 
 	//mat tmpE = inv(tmpC) * trans(tmpB);
 	mat tmpE = solve(tmpC, trans(tmpB));
-
-	eigenvalue_decomposition<mat> eig(solve(tmpD, (tmpA - tmpB * tmpE)));
 
 	cx_vec geval;
 	cx_mat gevec;
 	//eig_gen(geval, gevec, inv(tmpD) * (tmpA - tmpB * tmpE));
 	eig_gen(geval, gevec,solve(tmpD, (tmpA - tmpB * tmpE)));
 
+	//cout << "geval = \n" << geval << endl;
 	// Find the negative (as det(tmpD) < 0) eigenvalue
-	uvec I = find(real(geval.diag()) < 1e-8 && geval.diag() != datum::inf);
+	uvec I = find(real(geval) < 1e-8 && geval != datum::inf);
 
 	// Extract eigenvector corresponding to negative eigenvalue
 	A = real(gevec.col(I(0)));
